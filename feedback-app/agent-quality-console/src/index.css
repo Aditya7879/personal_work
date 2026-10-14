@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2642e6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #465fff;
+  --color-on-primary-container: #f9f7ff;
+  --color-primary-fixed: #dfe0ff;
+  --color-primary-fixed-dim: #bbc3ff;
+  --color-on-primary-fixed: #000d5f;
+  --color-on-primary-fixed-variant: #0029d2;
+  --color-inverse-primary: #bbc3ff;
+
+  --color-canvas: #F7F8FC;
+  --color-surface: #FFFFFF;
+  --color-surface-border: #EAECF0;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f1f3ff;
+  --color-surface-container: #e9edff;
+  --color-surface-container-high: #e0e8ff;
+  --color-surface-container-highest: #dbe2f9;
+  --color-inverse-surface: #293041;
+  --color-inverse-on-surface: #edf0ff;
+
+  --color-ink-primary: #101828;
+  --color-ink-secondary: #475467;
+  --color-ink-muted: #667085;
+
+  --color-indigo-soft: #EEF2FF;
+  --color-evidence-teal: #0E9384;
+  --color-evidence-soft: #ECFDF3;
+  --color-review-amber: #DC6803;
+  --color-review-soft: #FFFAEB;
+  --color-issue-red: #D92D20;
+  --color-issue-soft: #FEF3F2;
+  --color-dataset-purple: #7A5AF8;
+  --color-dataset-soft: #F4F3FF;
+  --color-state-gray: #667085;
+  --color-state-gray-soft: #F2F4F7;
+  
+  --color-tertiary: #5c37d9;
+  --color-tertiary-container: #7555f3;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-outline-variant: #c5c5d8;
+  --color-outline: #757687;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --spacing-gutter: 1.5rem;
+  --spacing-gutter-sm: 1rem;
+  --spacing-margin: 2rem;
+  --spacing-margin-sm: 1rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 1rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xl: 2rem;
+}
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #101828;
+    background-color: #F7F8FC;
+  }
+}
+
+/* Material Symbols alignment helper */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+/* Semantic Typography Utility Classes matching the design brief */
+.font-headline-lg {
+  font-family: 'Inter', sans-serif;
+  font-size: 30px;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.font-headline-md {
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.font-headline-sm {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+.font-title-md {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+.font-body-lg {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+.font-body-md {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 21px;
+  font-weight: 400;
+}
+.font-body-sm {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 400;
+}
+.font-label-md {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+.font-label-sm {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+.font-metadata {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+.font-code-sm {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+.font-code-xs {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+}

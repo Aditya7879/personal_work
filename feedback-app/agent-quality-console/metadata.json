@@ -1,0 +1,6 @@
+{
+  "name": "Agent Quality Console",
+  "description": "Enterprise console for evaluating agent quality, triage feedback, curating golden datasets, and release gating.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
