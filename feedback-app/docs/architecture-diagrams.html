@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="High-level and low-level architecture diagrams for the NEO Agent Quality Console: system context, cloud deployment, frontend and backend components, workflow sequences and the BigQuery data model.">
+  <title>NEO · Agent Quality Console architecture</title>
+  <style>
+    :root {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #243449;
+      background: #f6f8fb;
+      line-height: 1.55;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .page { max-width: 1320px; padding: 28px 28px 32px; margin: auto; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; font-size: 13px; color: #59687c; }
+    .brand-mark { padding: 5px 9px; border-radius: 6px; background: #283c51; color: white; font-weight: 650; font-size: 12px; letter-spacing: .06em; }
+    .heading, .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    h1 { font-size: clamp(25px, 3vw, 34px); font-weight: 650; line-height: 1.2; letter-spacing: -.03em; margin: 0 0 10px; }
+    .intro { color: #59687c; font-size: 14px; max-width: 820px; margin: 0; }
+    button { font: inherit; cursor: pointer; }
+    .button { padding: 6px 11px; min-height: 34px; border: 1px solid #d9e0e9; border-radius: 6px; background: white; color: #34465c; font-size: 12px; }
+    .button:hover:not(:disabled) { background: #edf2f8; border-color: #94a4b8; }
+    .button:disabled { cursor: not-allowed; opacity: .45; }
+    :focus-visible { outline: 3px solid #4584d1; outline-offset: 3px; }
+    .load-status { margin: 18px 0 12px; font-size: 12px; color: #627186; }
+    .load-status.has-error { color: #953d36; }
+    .group-heading { margin: 30px 0 14px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .group-heading:first-of-type { margin-top: 22px; }
+    .group-title { font-size: 16px; font-weight: 650; letter-spacing: -.01em; color: #2c3d54; margin: 0; }
+    .group-subtitle { font-size: 12px; color: #65748a; margin: 0; }
+    .diagram-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+    .diagram-panel { border: 1px solid #dce2ea; border-radius: 10px; overflow: hidden; background: white; min-width: 0; }
+    .diagram-panel.wide { grid-column: 1 / -1; }
+    .panel-heading { padding: 18px 20px 15px; }
+    .eyebrow { color: #65748a; font-size: 11px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 5px; }
+    h2 { font-size: 19px; font-weight: 650; letter-spacing: -.02em; line-height: 1.3; margin: 0 0 8px; }
+    .panel-description { color: #59687c; font-size: 13px; margin: 0; }
+    .toolbar { padding: 9px 15px; border-top: 1px solid #e1e6ee; border-bottom: 1px solid #e1e6ee; background: #fbfcfe; justify-content: flex-start; gap: 6px; }
+    .zoom-value { margin-left: auto; color: #68788c; font-size: 11px; }
+    .diagram-viewport { overflow: auto; scrollbar-gutter: stable; }
+    .diagram-stage { width: max-content; min-width: 100%; padding: 20px; display: flex; justify-content: center; align-items: flex-start; }
+    .diagram-stage > svg { display: block; max-width: none !important; flex-shrink: 0; }
+    .placeholder { width: min(430px, 75vw); padding: 80px 10px; text-align: center; color: #64748b; font-size: 13px; }
+    .note { border-top: 1px solid #e1e6ee; padding: 13px 20px; font-size: 12px; color: #58677b; margin: 0; }
+    details { border-top: 1px solid #e1e6ee; }
+    summary { padding: 11px 20px; cursor: pointer; color: #5d6d82; font-size: 12px; }
+    .mermaid-source { font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; max-height: 340px; overflow: auto; padding: 0 20px 18px; margin: 0; color: #40546f; }
+    .map { margin-top: 18px; border: 1px solid #dce2ea; border-radius: 7px; background: white; overflow: hidden; }
+    .map h3 { font-size: 12px; margin: 0; padding: 11px 15px; border-bottom: 1px solid #e1e6ee; color: #45566d; letter-spacing: .02em; }
+    .map table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .map td { padding: 8px 15px; border-top: 1px solid #eef1f6; vertical-align: top; color: #4d5d72; }
+    .map td:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: #34465c; white-space: nowrap; width: 1%; padding-right: 22px; }
+    footer { margin-top: 16px; font-size: 11px; color: #6a788c; }
+    footer p { margin: 4px 0; }
+    footer a { color: #3f6fb5; }
+    .noscript { font-size: 13px; color: #963e38; }
+    @media (max-width: 760px) {
+      .page { padding: 20px 14px; }
+      .diagram-grid { grid-template-columns: minmax(0, 1fr); }
+      .panel-heading { padding: 16px; }
+      .zoom-value { display: none; }
+      .map td:first-child { white-space: normal; }
+    }
+    @media print {
+      @page { size: A3 landscape; margin: 8mm; }
+      :root { background: white; line-height: 1.35; }
+      .page { max-width: none; padding: 0; }
+      .brand, .toolbar, .load-status, details, #print-page, footer, .map { display: none; }
+      h1 { font-size: 20px; margin-bottom: 6px; }
+      .intro { font-size: 10px; margin-bottom: 8px; }
+      .group-heading { margin: 10px 0 6px; }
+      .diagram-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+      .diagram-panel { break-inside: avoid; }
+      .diagram-panel.wide .diagram-stage > svg { height: 78mm !important; }
+      .panel-heading { padding: 8px 10px; }
+      .eyebrow { font-size: 9px; margin-bottom: 3px; }
+      h2 { font-size: 14px; margin-bottom: 5px; }
+      .panel-description { display: none; }
+      .note { font-size: 9px; padding: 6px 10px; }
+      .diagram-viewport { overflow: visible; scrollbar-gutter: auto; }
+      .diagram-stage { width: 100%; padding: 4px; }
+      .diagram-stage > svg { width: 100% !important; height: 88mm !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="brand"><span class="brand-mark">NEO</span>Agent Quality Console · architecture reference</div>
+      <div class="heading">
+        <div>
+          <h1>Architecture diagrams — the whole setup</h1>
+          <p class="intro">High-level first: who uses the console, which systems it talks to, and how it is deployed on Google Cloud. Then low-level: frontend and backend components, the two core workflow sequences, and the BigQuery data model.</p>
+        </div>
+        <button class="button" type="button" id="print-page">Print / PDF</button>
+      </div>
+    </header>
+
+    <noscript>
+      <style>.toolbar, #print-page, .load-status, .diagram-viewport { display: none; }</style>
+      <p class="noscript">Enable JavaScript and allow the Mermaid CDN to render the diagrams. Descriptions and Mermaid source are available in each panel.</p>
+    </noscript>
+    <p class="load-status" id="load-status" role="status" aria-live="polite">Loading Mermaid from CDN…</p>
+
+    <div class="group-heading">
+      <h2 class="group-title">Part 1 · High-level diagrams</h2>
+      <p class="group-subtitle">System context and cloud deployment — the picture you would show in a review.</p>
+    </div>
+
+    <div class="diagram-grid">
+      <section class="diagram-panel" id="panel-context" aria-labelledby="title-context" data-key="context">
+        <div class="panel-heading">
+          <p class="eyebrow">1 / High level · System context</p>
+          <h2 id="title-context">Who and what the console connects to</h2>
+          <p class="panel-description">Three roles use one console. Around it: the NEO Companion API for answer generation, the L’Oréal AI Gateway (Claude Sonnet 4.6) for judging, Neo4j for source passages, and BigQuery as the system of record.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="System context diagram controls">
+          <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+          <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+          <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+          <button class="button" type="button" data-action="source">Mermaid source</button>
+          <output class="zoom-value" aria-label="System context diagram zoom">—</output>
+        </div>
+        <div class="diagram-viewport" tabindex="0" role="region" aria-label="System context diagram; scroll sideways if needed">
+          <div class="diagram-stage"><p class="placeholder">Rendering the system context…</p></div>
+        </div>
+        <p class="note"><strong>Two separate AI connections.</strong> NEO generates the answer; the gateway judges it. They have independent authorization — being allowed to invoke NEO does not authorize gateway calls, or vice versa.</p>
+        <details>
+          <summary>View Mermaid source</summary>
+          <pre class="mermaid-source" tabindex="0">flowchart LR
+    accTitle: High level system context of the Agent Quality Console
+    accDescr: Reporters, reviewers and admins use the Agent Quality Console. The console calls the NEO Companion agent API for fresh answers, the L'Oréal AI Gateway with Claude Sonnet 4.6 for root cause analysis, Neo4j for document passages, BigQuery for all state, Google IAP and IAM for identity, and Secret Manager and Cloud Storage for credentials and document mirrors.
+
+    subgraph PEO["People"]
+        REP["Reporter&lt;br/&gt;business user"]:::reporter
+        REV["Reviewer&lt;br/&gt;quality engineer"]:::reviewer
+        ADM["Admin / demo presenter&lt;br/&gt;access and environments"]:::admin
+    end
+
+    subgraph SYS["Agent Quality Console"]
+        direction TB
+        SPA["React SPA&lt;br/&gt;role-aware workspace"]:::app
+        EDGE["Express edge server&lt;br/&gt;IAP verify · /api proxy"]:::app
+        API["FastAPI backend&lt;br/&gt;workflow + RCA services"]:::app
+        WRK["Workflow worker&lt;br/&gt;leased BigQuery jobs"]:::app
+        SPA --- EDGE --- API
+        API --- WRK
+    end
+
+    REP ==&gt;|HTTPS| SPA
+    REV ==&gt;|HTTPS| SPA
+    ADM ==&gt;|HTTPS| SPA
+
+    API --&gt;|"fresh answers&lt;br/&gt;(generation)"| NEOAPI["NEO Companion agent API&lt;br/&gt;per-environment targets"]:::ext
+    API --&gt;|"RCA + answer assessment&lt;br/&gt;Claude Sonnet 4.6"| GW["L'Oréal AI Gateway&lt;br/&gt;BTAP gateway"]:::ai
+    API --&gt;|"semantic + keyword search&lt;br/&gt;source passages"| N4J[("Neo4j&lt;br/&gt;parsed NEO docs")]:::store
+    API --&gt;|"feedback · jobs · versions&lt;br/&gt;golden sets · evals · access"| BQ[("BigQuery · agent_quality&lt;br/&gt;system of record")]:::store
+    API --- SM["Secret Manager&lt;br/&gt;Neo4j creds · embedding key&lt;br/&gt;scope-signing secret"]:::ext
+    API --- GCS["Cloud Storage&lt;br/&gt;parsed doc mirrors (VLM / fast)"]:::ext
+    EDGE --&gt;|"authN + authZ"| IAP["Google IAP · IAM&lt;br/&gt;managed sign-in"]:::guard
+
+    classDef reporter fill:#e9f6f2,stroke:#368577,color:#154f49
+    classDef reviewer fill:#edf3fd,stroke:#557ab9,color:#284b82
+    classDef admin fill:#f7ecec,stroke:#b0655f,color:#7a3b36
+    classDef app fill:#f0f3f7,stroke:#7e8fa4,color:#34465d
+    classDef ai fill:#f2edfa,stroke:#9273b6,color:#573b80
+    classDef store fill:#eef7f9,stroke:#4b8f9e,color:#1f5561
+    classDef ext fill:#fff6e3,stroke:#bc9144,color:#72551c
+    classDef guard fill:#fff0ee,stroke:#c07a55,color:#83441f</pre>
+        </details>
+      </section>
+
+      <section class="diagram-panel" id="panel-deployment" aria-labelledby="title-deployment" data-key="deployment">
+        <div class="panel-heading">
+          <p class="eyebrow">2 / High level · Cloud deployment</p>
+          <h2 id="title-deployment">Two Cloud Run services behind Google identity</h2>
+          <p class="panel-description">The browser signs in through IAP to the frontend service; the frontend calls the backend with a workload identity token. Deploys are scripted from a workstation — the cloud images store no static keys.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="Deployment diagram controls">
+          <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+          <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+          <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+          <button class="button" type="button" data-action="source">Mermaid source</button>
+          <output class="zoom-value" aria-label="Deployment diagram zoom">—</output>
+        </div>
+        <div class="diagram-viewport" tabindex="0" role="region" aria-label="Cloud deployment diagram; scroll sideways if needed">
+          <div class="diagram-stage"><p class="placeholder">Rendering the deployment…</p></div>
+        </div>
+        <p class="note"><strong>Credentials.</strong> Secret Manager holds five values: Neo4j URI / username / password, the OpenAI query-embedding key, and the app scope-signing secret. Everything else Google-side is short-lived ADC metadata on the attached compute identity. NEO and the gateway must authorize that principal separately.</p>
+        <details>
+          <summary>View Mermaid source</summary>
+          <pre class="mermaid-source" tabindex="0">flowchart TB
+    accTitle: High level Google Cloud deployment of the Agent Quality Console
+    accDescr: A browser signs in via Identity-Aware Proxy to a Cloud Run frontend service running an Express server that verifies the IAP JWT, serves the SPA and proxies /api to a Cloud Run backend service using a workload identity token authorized by IAM. The FastAPI backend with its in-process workflow worker talks to BigQuery, Neo4j, the NEO Companion API, the L'Oréal AI Gateway, Secret Manager and Cloud Storage. Deployment scripts run from a workstation.
+
+    USER["Browser&lt;br/&gt;Google account, loreal.com"]:::reporter
+
+    subgraph GCP["GCP sandbox project · europe-west1"]
+        subgraph FES["Cloud Run · frontend service"]
+            FE["server.mjs (Express)&lt;br/&gt;verify IAP JWT · serve SPA bundle&lt;br/&gt;proxy /api with ID token"]:::app
+        end
+        subgraph BES["Cloud Run · backend service"]
+            BE["FastAPI app&lt;br/&gt;auth · workflow · RCA · evaluations&lt;br/&gt;+ in-process workflow worker"]:::app
+        end
+        BQ[("BigQuery&lt;br/&gt;dataset agent_quality")]:::store
+        SMX["Secret Manager&lt;br/&gt;Neo4j URI / user / password&lt;br/&gt;OpenAI embedding key&lt;br/&gt;scope-signing secret"]:::ext
+        GSB[("Cloud Storage&lt;br/&gt;parsed_docs_vlm · parsed_docs_fast")]:::store
+    end
+
+    IAPX["Identity-Aware Proxy&lt;br/&gt;managed browser sign-in"]:::guard
+    IAMX["Cloud IAM&lt;br/&gt;service-to-service invoker"]:::guard
+    NEOX["NEO Companion API&lt;br/&gt;api.loreal.net"]:::ext
+    GWX["L'Oréal AI Gateway&lt;br/&gt;claude-sonnet-4-6"]:::ai
+    NEO4JX[("Neo4j database&lt;br/&gt;vector + fulltext indexes")]:::store
+
+    USER ==&gt; IAPX ==&gt; FE
+    FE --&gt;|"/api + workload ID token"| IAMX --&gt; BE
+    BE --- BQ
+    BE --- NEO4JX
+    BE --- SMX
+    BE --&gt; NEOX
+    BE --&gt; GWX
+    BE --- GSB
+
+    subgraph WS["Workstation · feedback-app/deploy/"]
+        DEP["cloudrun.py · browser_iap.py&lt;br/&gt;iam_authz.py · proxy.py&lt;br/&gt;app_update.py · verify.py"]:::reviewer
+    end
+    DEP -. &quot;build · rollout · IAM/IAP wiring&quot; .-&gt; GCP
+
+    classDef reporter fill:#e9f6f2,stroke:#368577,color:#154f49
+    classDef reviewer fill:#edf3fd,stroke:#557ab9,color:#284b82
+    classDef app fill:#f0f3f7,stroke:#7e8fa4,color:#34465d
+    classDef ai fill:#f2edfa,stroke:#9273b6,color:#573b80
+    classDef store fill:#eef7f9,stroke:#4b8f9e,color:#1f5561
+    classDef ext fill:#fff6e3,stroke:#bc9144,color:#72551c
+    classDef guard fill:#fff0ee,stroke:#c07a55,color:#83441f</pre>
+        </details>
+      </section>
+    </div>
+
+    <div class="group-heading">
+      <h2 class="group-title">Part 2 · Low-level diagrams</h2>
+      <p class="group-subtitle">Components, sequences and data — the picture you would open while coding.</p>
+    </div>
+
+    <div class="diagram-grid">
+      <section class="diagram-panel" id="panel-frontend" aria-labelledby="title-frontend" data-key="frontend">
+        <div class="panel-heading">
+          <p class="eyebrow">3 / Low level · Frontend components</p>
+          <h2 id="title-frontend">React SPA organized by role lanes</h2>
+          <p class="panel-description">App.tsx routes by role and environment. Every screen talks to the backend through one API layer; the Express edge server verifies IAP and forwards /api with a workload identity token.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="Frontend diagram controls">
+          <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+          <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+          <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+          <button class="button" type="button" data-action="source">Mermaid source</button>
+          <output class="zoom-value" aria-label="Frontend diagram zoom">—</output>
+        </div>
+        <div class="diagram-viewport" tabindex="0" role="region" aria-label="Frontend component diagram; scroll sideways if needed">
+          <div class="diagram-stage"><p class="placeholder">Rendering the frontend map…</p></div>
+        </div>
+        <p class="note"><strong>Local development</strong> runs the SPA against the backend in mock auth mode (<code>FEEDBACK_AUTH_MODE=mock</code>) with the mock sign-in view; production uses managed IAP sign-in.</p>
+        <details>
+          <summary>View Mermaid source</summary>
+          <pre class="mermaid-source" tabindex="0">flowchart TB
+    accTitle: Low level frontend components of the Agent Quality Console
+    accDescr: The Express edge server verifies IAP, proxies /api and serves the built SPA. Inside the React app, App.tsx routes by role. The reporter lane has My feedback, the submit modal, the edit view, the detail view and notifications. The reviewer lane has Overview with charts, the feedback inbox, the triage queue, the detail workspace with evidence panel, answer history, answer comparison and saved RCA, plus golden datasets, evaluation runs and release comparisons. Admin screens manage access grants and environments. A shared API layer and utils serve all lanes.
+
+    subgraph EDG["server.mjs · Express edge"]
+        IV["IAP verifier&lt;br/&gt;managed browser sign-in"]:::guard
+        PX["/api proxy&lt;br/&gt;raw passthrough + workload ID token"]:::guard
+        ST["Static bundle&lt;br/&gt;dist assets + index.html"]:::app
+    end
+
+    BE["FastAPI backend&lt;br/&gt;/api/*"]:::backend
+
+    subgraph SPA["agent-quality-console/src · React SPA (Vite)"]
+        APP["App.tsx&lt;br/&gt;role + environment aware routing"]:::app
+        APIL["api/feedbackApi.ts · api/demoAdminApi.ts&lt;br/&gt;the only path to the backend"]:::app
+
+        subgraph RLANE["Reporter lane"]
+            MY["MyFeedbackView&lt;br/&gt;your submissions"]:::reporter
+            GF["GiveFeedbackModal&lt;br/&gt;rating + expected-answer hint"]:::reporter
+            FED["FeedbackEditView&lt;br/&gt;permitted fields only"]:::reporter
+            FDT["FeedbackDetailView&lt;br/&gt;saved answers + safe RCA"]:::reporter
+            NTF["FeedbackNotifications"]:::reporter
+        end
+
+        subgraph VLANE["Reviewer lane"]
+            OV["OverviewView + DashboardCharts&lt;br/&gt;quality KPIs"]:::reviewer
+            INB["FeedbackInboxView&lt;br/&gt;ColumnFilter + filters"]:::reviewer
+            TQ["TriageQueueView"]:::reviewer
+            DTV["FeedbackDetailView +&lt;br/&gt;FeedbackEvidencePanel · AnswerHistoryView&lt;br/&gt;AnswerComparisonDialog · SavedRcaAssessment"]:::reviewer
+            GLD["GoldenDatasetsView&lt;br/&gt;approve cases"]:::reviewer
+            EVL["EvaluationRunsView&lt;br/&gt;score the agent"]:::reviewer
+            REL["ReleaseComparisonsView&lt;br/&gt;compare versions"]:::reviewer
+        end
+
+        subgraph ALANE["Admin and settings"]
+            ACM["AccessManagementView&lt;br/&gt;grants + audit history"]:::admin
+            ENV["EnvironmentSettingsView +&lt;br/&gt;EndpointTestDialog · PromotionDialog"]:::admin
+            DMO["DemoAdminControls&lt;br/&gt;persona · reset"]:::admin
+        end
+
+        UTL["utils/&lt;br/&gt;answerReview · answerAssessment · environmentScope&lt;br/&gt;inboxEnvironment · demoAuth · dialogFocus · uiMotion"]:::ext
+
+        APP --&gt; RLANE
+        APP --&gt; VLANE
+        APP --&gt; ALANE
+        APIL --- UTL
+    end
+
+    RLANE --&gt; APIL
+    VLANE --&gt; APIL
+    ALANE --&gt; APIL
+    APIL --&gt; PX
+    IV --&gt; PX
+    PX --&gt; BE
+
+    classDef reporter fill:#e9f6f2,stroke:#368577,color:#154f49
+    classDef reviewer fill:#edf3fd,stroke:#557ab9,color:#284b82
+    classDef admin fill:#f7ecec,stroke:#b0655f,color:#7a3b36
+    classDef app fill:#f0f3f7,stroke:#7e8fa4,color:#34465d
+    classDef backend fill:#e8eef7,stroke:#5f7ba6,color:#2a4a7c
+    classDef ext fill:#fff6e3,stroke:#bc9144,color:#72551c
+    classDef guard fill:#fff0ee,stroke:#c07a55,color:#83441f</pre>
+        </details>
+      </section>
+
+      <section class="diagram-panel" id="panel-backend" aria-labelledby="title-backend" data-key="backend">
+        <div class="panel-heading">
+          <p class="eyebrow">4 / Low level · Backend modules</p>
+          <h2 id="title-backend">FastAPI surface and the services behind it</h2>
+          <p class="panel-description">Role-scoped routes in main.py, three routers, and a service layer. The workflow worker is the engine: it claims leased jobs from BigQuery and runs enrich → RCA or generation → RCA recheck.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="Backend diagram controls">
+          <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+          <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+          <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+          <button class="button" type="button" data-action="source">Mermaid source</button>
+          <output class="zoom-value" aria-label="Backend diagram zoom">—</output>
+        </div>
+        <div class="diagram-viewport" tabindex="0" role="region" aria-label="Backend module diagram; scroll sideways if needed">
+          <div class="diagram-stage"><p class="placeholder">Rendering the backend map…</p></div>
+        </div>
+        <p class="note"><strong>Worker.</strong> Enabled by default, polling about every 15 s. Jobs are claimed under a lease (renewed while running) with idempotency keys on enqueue, so only one worker instance processes a job and retries stay safe. Agent calls are restricted to an allow-listed host.</p>
+        <details>
+          <summary>View Mermaid source</summary>
+          <pre class="mermaid-source" tabindex="0">flowchart TB
+    accTitle: Low level backend modules of the Agent Quality Console
+    accDescr: The HTTP surface has auth routes, reporter routes under /api/my, reviewer routes for feedback and overview, workflow actions for analysis retests and answer RCA, golden dataset and evaluation routes, plus environment, access and role demo routers. Behind them sit the workflow repository and worker, the root cause gateway client, Neo4j evidence retrieval, agent targets with endpoint tests, ownership and submission helpers, the auth module, access and environment repositories, and dashboard, evaluation and demo helpers. External systems are BigQuery, Neo4j, the AI gateway and the NEO agent API.
+
+    subgraph HTTP["HTTP surface · main.py + routers"]
+        AUTH["auth&lt;br/&gt;mock-login · me · mock-users"]:::guard
+        MYR["/api/my/*&lt;br/&gt;reporter: feedback CRUD · taxonomy&lt;br/&gt;history · notifications · confirmation"]:::reporter
+        RVR["/api/feedback + /api/overview&lt;br/&gt;reviewer: inbox · triage&lt;br/&gt;root-cause/suggest · KPIs"]:::reviewer
+        WFR["workflow actions&lt;br/&gt;analysis 202 · retests 202&lt;br/&gt;answer-rca 202"]:::reviewer
+        GER["golden datasets / cases&lt;br/&gt;evaluations"]:::reviewer
+        ENVR["environment_routes&lt;br/&gt;environments · endpoint tests&lt;br/&gt;promotions"]:::admin
+        ACR["access_routes&lt;br/&gt;grants + audit history"]:::admin
+        RDR["role_demo_routes&lt;br/&gt;persona · session · reset"]:::app
+    end
+
+    subgraph SVC["Services · backend/app/"]
+        WREPO["workflow_repository&lt;br/&gt;jobs · leases · idempotency&lt;br/&gt;append-only versions"]:::app
+        WWORK["workflow_worker&lt;br/&gt;claim → enrich/rca&lt;br/&gt;or generate → recheck"]:::app
+        RCA2["root_cause&lt;br/&gt;gateway client + error taxonomy&lt;br/&gt;no automatic retry"]:::ai
+        EVID["neo4j_evidence + document_evidence&lt;br/&gt;semantic + keyword retrieval"]:::evidence
+        TGT["agent_targets + endpoint_tests&lt;br/&gt;env targets · host allow-list"]:::app
+        OWN["feedback_ownership · submission_edits&lt;br/&gt;answer_review · business_domain"]:::app
+        AUTHM["auth.py&lt;br/&gt;mock / IAP / IAM modes&lt;br/&gt;roles from access grants"]:::guard
+        ACCR["access_repository&lt;br/&gt;grant lookups + cache"]:::app
+        ENVRP["environment_repository&lt;br/&gt;env revisions · promotions"]:::app
+        MISC["dashboard · evaluation · cache&lt;br/&gt;role_demo · demo_simulation&lt;br/&gt;neo_companion · config"]:::ext
+    end
+
+    BQQ[("BigQuery&lt;br/&gt;agent_quality")]:::store
+    N4[("Neo4j&lt;br/&gt;source passages")]:::store
+    GWW["L'Oréal AI Gateway&lt;br/&gt;Sonnet 4.6"]:::ai
+    NEOA["NEO agent API&lt;br/&gt;per-environment targets"]:::ext
+
+    WFR --&gt; WREPO
+    RVR --&gt; OWN
+    ENVR --&gt; ENVRP
+    ACR --&gt; ACCR
+    AUTH --- AUTHM
+    WREPO --&gt; WWORK
+    WWORK --&gt; EVID
+    WWORK --&gt; RCA2
+    WWORK --&gt; TGT
+
+    WREPO --- BQQ
+    ACCR --- BQQ
+    ENVRP --- BQQ
+    EVID --- N4
+    RCA2 --&gt; GWW
+    TGT --&gt; NEOA
+
+    classDef reporter fill:#e9f6f2,stroke:#368577,color:#154f49
+    classDef reviewer fill:#edf3fd,stroke:#557ab9,color:#284b82
+    classDef admin fill:#f7ecec,stroke:#b0655f,color:#7a3b36
+    classDef app fill:#f0f3f7,stroke:#7e8fa4,color:#34465d
+    classDef ai fill:#f2edfa,stroke:#9273b6,color:#573b80
+    classDef evidence fill:#fff6e3,stroke:#bc9144,color:#72551c
+    classDef store fill:#eef7f9,stroke:#4b8f9e,color:#1f5561
+    classDef ext fill:#fff6e3,stroke:#bc9144,color:#72551c
+    classDef guard fill:#fff0ee,stroke:#c07a55,color:#83441f</pre>
+        </details>
+      </section>
+    </div>
+
+    <div class="diagram-grid" style="margin-top: 18px;">
+      <section class="diagram-panel" id="panel-flow-rca" aria-labelledby="title-flow-rca" data-key="flow-rca">
+        <div class="panel-heading">
+          <p class="eyebrow">5 / Low level · Sequence</p>
+          <h2 id="title-flow-rca">Submission → automatic RCA</h2>
+          <p class="panel-description">A submission enqueues an evidence job and an RCA job. The worker retrieves Neo4j passages, asks Sonnet to judge the answer, and saves an append-only diagnosis for the reviewer.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="Submission sequence diagram controls">
+          <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+          <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+          <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+          <button class="button" type="button" data-action="source">Mermaid source</button>
+          <output class="zoom-value" aria-label="Submission sequence diagram zoom">—</output>
+        </div>
+        <div class="diagram-viewport" tabindex="0" role="region" aria-label="Submission to RCA sequence diagram; scroll sideways if needed">
+          <div class="diagram-stage"><p class="placeholder">Rendering the submission sequence…</p></div>
+        </div>
+        <p class="note"><strong>Failure posture.</strong> Gateway errors map to an explicit taxonomy (authentication, permission, rate limit, timeout, network, unavailable, request, response) and end the job as review-required with the saved answer retained — there is no automatic retry.</p>
+        <details>
+          <summary>View Mermaid source</summary>
+          <pre class="mermaid-source" tabindex="0">sequenceDiagram
+    autonumber
+    actor R as Reporter
+    participant SPA as Console SPA
+    participant API as FastAPI backend
+    participant BQ as BigQuery agent_quality
+    participant WRK as Workflow worker
+    participant N4 as Neo4j
+    participant GW as AI Gateway Sonnet 4.6
+    actor REV as Reviewer
+
+    R-&gt;&gt;SPA: Submit feedback - rating, what went wrong, expected hint
+    SPA-&gt;&gt;API: POST /api/my/feedback
+    API-&gt;&gt;BQ: Insert feedback_items + feedback_events
+    API-&gt;&gt;BQ: Enqueue enrich + rca jobs with idempotency key
+    API--&gt;&gt;R: 201 Created
+    loop Poll about every 15 s, leased claim
+        WRK-&gt;&gt;BQ: claim_feedback_job
+    end
+    WRK-&gt;&gt;N4: Semantic + keyword search on question and hint
+    N4--&gt;&gt;WRK: Source passages + references
+    WRK-&gt;&gt;GW: Judge NEO answer against the evidence
+    GW--&gt;&gt;WRK: Suggested RCA + supported and missing claims + citations
+    WRK-&gt;&gt;BQ: Save feedback_rca_versions, complete job
+    Note over WRK,BQ: Append-only - earlier versions never overwritten
+    Note over WRK,GW: Gateway failure = review required, saved answer kept, no retry
+    REV-&gt;&gt;API: GET /api/feedback/id with evidence
+    API--&gt;&gt;REV: Diagnosis + citations to verify</pre>
+        </details>
+      </section>
+
+      <section class="diagram-panel" id="panel-flow-retest" aria-labelledby="title-flow-retest" data-key="flow-retest">
+        <div class="panel-heading">
+          <p class="eyebrow">6 / Low level · Sequence</p>
+          <h2 id="title-flow-retest">Reviewer retest → owner confirmation</h2>
+          <p class="panel-description">A reviewer explicitly requests a fresh NEO answer against a chosen environment target. The worker generates it, rechecks it against evidence, auto-shares the safe result — and only the owner can resolve the report.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="Retest sequence diagram controls">
+          <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+          <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+          <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+          <button class="button" type="button" data-action="source">Mermaid source</button>
+          <output class="zoom-value" aria-label="Retest sequence diagram zoom">—</output>
+        </div>
+        <div class="diagram-viewport" tabindex="0" role="region" aria-label="Retest and confirmation sequence diagram; scroll sideways if needed">
+          <div class="diagram-stage"><p class="placeholder">Rendering the retest sequence…</p></div>
+        </div>
+        <p class="note"><strong>No Publish step.</strong> The reporter automatically sees the latest saved answer and safe RCA. Resolution needs the actual owner’s explicit confirmation for the latest completed result, on the current revision, in the same environment — a non-production result cannot resolve a production report.</p>
+        <details>
+          <summary>View Mermaid source</summary>
+          <pre class="mermaid-source" tabindex="0">sequenceDiagram
+    autonumber
+    actor REV as Reviewer
+    participant API as FastAPI backend
+    participant BQ as BigQuery agent_quality
+    participant WRK as Workflow worker
+    participant NEO as NEO agent API env target
+    participant GW as AI Gateway Sonnet 4.6
+    actor R as Reporter owner
+
+    REV-&gt;&gt;API: POST /api/feedback/id/retests with target snapshot
+    API-&gt;&gt;BQ: Enqueue generation job for the environment
+    API--&gt;&gt;REV: 202 Accepted
+    WRK-&gt;&gt;BQ: Claim job under lease, phase = generation
+    WRK-&gt;&gt;NEO: Invoke agent - question + context, allow-listed host
+    NEO--&gt;&gt;WRK: Fresh answer
+    WRK-&gt;&gt;BQ: Save feedback_answer_versions, phase = rca
+    WRK-&gt;&gt;GW: Recheck new answer vs baseline + evidence
+    GW--&gt;&gt;WRK: Assessment + comparison
+    WRK-&gt;&gt;BQ: Save feedback_rca_versions, auto-share safe result
+    BQ--&gt;&gt;R: Notification - new answer + safe RCA visible automatically
+    R-&gt;&gt;API: POST .../retests/attempt/confirmation
+    alt Fixed
+        API-&gt;&gt;BQ: Resolved by owner confirmation
+        Note over API,BQ: Latest completed result, current revision, same environment
+    else No or partly fixed
+        API-&gt;&gt;BQ: Back to review - reviewer iterates
+    end
+    Note over WRK,NEO: A non-production result cannot resolve a production report</pre>
+        </details>
+      </section>
+    </div>
+
+    <div class="diagram-grid" style="margin-top: 18px;">
+      <section class="diagram-panel wide" id="panel-data" aria-labelledby="title-data" data-key="data">
+        <div class="panel-heading">
+          <p class="eyebrow">7 / Low level · Data model</p>
+          <h2 id="title-data">BigQuery tables in dataset agent_quality</h2>
+          <p class="panel-description">One row of BigQuery is the system of record: feedback with an audit trail, leased workflow jobs, append-only answer and RCA versions, golden sets with evaluations, and the environment/promotion registry. Access grants live in the configured authz table and are cached server-side.</p>
+        </div>
+        <div class="toolbar" role="group" aria-label="Data model diagram controls">
+          <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+          <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+          <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+          <button class="button" type="button" data-action="source">Mermaid source</button>
+          <output class="zoom-value" aria-label="Data model diagram zoom">—</output>
+        </div>
+        <div class="diagram-viewport" tabindex="0" role="region" aria-label="BigQuery entity relationship diagram; scroll sideways if needed">
+          <div class="diagram-stage"><p class="placeholder">Rendering the data model…</p></div>
+        </div>
+        <p class="note"><strong>Append-only history.</strong> feedback_events plus the *_versions tables are never overwritten; current values sit on feedback_items and history is rebuilt from versions. Access grants use the table named by FEEDBACK_AUTHZ_TABLE with a separate audit-history table.</p>
+        <details>
+          <summary>View Mermaid source</summary>
+          <pre class="mermaid-source" tabindex="0">erDiagram
+    FEEDBACK_ITEMS ||--o{ FEEDBACK_EVENTS : "audit trail"
+    FEEDBACK_ITEMS ||--o{ FEEDBACK_WORKFLOW_JOBS : "enrich / rca / retest"
+    FEEDBACK_WORKFLOW_JOBS ||--o| FEEDBACK_ANSWER_VERSIONS : "generates"
+    FEEDBACK_WORKFLOW_JOBS ||--o{ FEEDBACK_RCA_VERSIONS : "diagnoses"
+    FEEDBACK_ANSWER_VERSIONS ||--o{ FEEDBACK_RCA_VERSIONS : "assessed by"
+    FEEDBACK_ITEMS ||--o{ FEEDBACK_NOTIFICATIONS : "owner updates"
+    FEEDBACK_ITEMS ||--o{ GOLDEN_CASES : "promoted as candidate"
+    GOLDEN_DATASETS ||--o{ GOLDEN_CASES : "contains"
+    EVALUATION_RUNS ||--o{ EVALUATION_CASE_RESULTS : "produces"
+    GOLDEN_CASES ||--o{ EVALUATION_CASE_RESULTS : "scored by"
+    AGENT_ENVIRONMENTS ||--o{ AGENT_ENVIRONMENT_VERSIONS : "revision history"
+    AGENT_ENVIRONMENTS ||--o{ AGENT_ENDPOINT_TESTS : "verified by"
+    AGENT_ENVIRONMENTS ||--o{ FEEDBACK_PROMOTION_BATCHES : "promotion target"
+    FEEDBACK_PROMOTION_BATCHES ||--o{ FEEDBACK_MAIN_ENVIRONMENTS : "assigns"
+    FEEDBACK_ITEMS ||--o| FEEDBACK_MAIN_ENVIRONMENTS : "linked environment"
+
+    FEEDBACK_ITEMS {
+        string id PK
+        string question
+        string answer
+        string agent_name
+        string status
+        string environment
+        string business_domain
+        string business_subdomain
+        string domain_source
+        int64 revision
+        string run_context_json
+    }
+    FEEDBACK_EVENTS {
+        string feedback_id FK
+        string event
+        string actor
+        timestamp created_at
+    }
+    FEEDBACK_WORKFLOW_JOBS {
+        string id PK
+        string feedback_id FK
+        string kind
+        string status
+        string phase
+        string lease_token
+        string target_id
+        string environment
+        int64 revision
+        string confirmation
+    }
+    FEEDBACK_ANSWER_VERSIONS {
+        string id PK
+        string feedback_id FK
+        string attempt_id
+        string payload_json
+    }
+    FEEDBACK_RCA_VERSIONS {
+        string id PK
+        string feedback_id FK
+        string answer_id FK
+        string payload_json
+    }
+    FEEDBACK_NOTIFICATIONS {
+        string id PK
+        string feedback_id FK
+        string recipient
+        timestamp read_at
+    }
+    GOLDEN_DATASETS {
+        string id PK
+        string name
+    }
+    GOLDEN_CASES {
+        string id PK
+        string dataset_id FK
+        string feedback_id FK
+        string state
+    }
+    EVALUATION_RUNS {
+        string id PK
+        string dataset
+        string agent_version
+    }
+    EVALUATION_CASE_RESULTS {
+        string id PK
+        string evaluation_id FK
+        string case_id FK
+        string verdict
+    }
+    AGENT_ENVIRONMENTS {
+        string id PK
+        string agent_id
+        string name
+        string kind
+        string url
+        bool enabled
+        int64 revision
+    }
+    AGENT_ENVIRONMENT_VERSIONS {
+        string id PK
+        string environment_id FK
+        int64 revision
+        string payload_json
+    }
+    AGENT_ENDPOINT_TESTS {
+        string id PK
+        string environment_id FK
+        int64 configuration_revision
+        string status
+    }
+    FEEDBACK_PROMOTION_BATCHES {
+        string id PK
+        string target_id FK
+        string source_environment_id
+        int64 total
+        timestamp cancelled_at
+    }
+    FEEDBACK_MAIN_ENVIRONMENTS {
+        string feedback_id FK
+        string environment_id FK
+        string promotion_batch_id FK
+        int64 revision
+    }</pre>
+        </details>
+      </section>
+    </div>
+
+    <div class="map" aria-label="Where each part lives in the repository">
+      <h3>Where each part lives</h3>
+      <table>
+        <tbody>
+          <tr><td>feedback-app/agent-quality-console/src/</td><td>React SPA — views per lane, shared components, <code>api/</code> layer, <code>utils/</code>, styles.</td></tr>
+          <tr><td>feedback-app/agent-quality-console/server.mjs</td><td>Express edge — IAP verification, /api proxy with workload identity token, static hosting.</td></tr>
+          <tr><td>feedback-app/backend/app/</td><td>FastAPI backend — routes in <code>main.py</code>, routers (<code>environment_routes.py</code>, <code>access_routes.py</code>, <code>role_demo_routes.py</code>), services (<code>workflow_repository.py</code>, <code>workflow_worker.py</code>, <code>root_cause.py</code>, <code>neo4j_evidence.py</code>, <code>document_evidence.py</code>, <code>agent_targets.py</code>, <code>auth.py</code>, <code>access_repository.py</code>, <code>environment_repository.py</code>, <code>bigquery.py</code>), tests in <code>backend/tests/</code>.</td></tr>
+          <tr><td>feedback-app/deploy/</td><td>Deployment tooling — Cloud Run rollout, browser IAP, IAM authorization, proxy, verification scripts.</td></tr>
+          <tr><td>feedback-app/docs/</td><td>This page, <a href="feedback-workflow.html">feedback-workflow.html</a> (the reporter↔reviewer loop and how RCA works) and role guides.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <footer>
+      <p>Workflow narrative and guardrails: see feedback-workflow.html in this folder. Diagrams reflect the codebase as of the current main; names match source files and BigQuery table constants.</p>
+      <p>Standalone HTML · Mermaid 11.4.1 via jsDelivr CDN · internet needed to render · no feedback data or credentials included.</p>
+    </footer>
+  </main>
+
+  <script type="module">
+    const panels = [...document.querySelectorAll('.diagram-panel')];
+    const status = document.getElementById('load-status');
+    const diagrams = new Map();
+
+    function setZoom(panel, scale, mode) {
+      const diagram = diagrams.get(panel.dataset.key);
+      if (!diagram) return;
+      diagram.scale = Math.max(0.2, Math.min(2, scale));
+      diagram.mode = mode;
+      diagram.svg.style.width = `${diagram.width * diagram.scale}px`;
+      diagram.svg.style.height = `${diagram.height * diagram.scale}px`;
+      panel.querySelector('.zoom-value').textContent = `${Math.round(diagram.scale * 100)}%`;
+    }
+
+    function fit(panel) {
+      const diagram = diagrams.get(panel.dataset.key);
+      if (!diagram) return;
+      const width = panel.querySelector('.diagram-viewport').clientWidth - 40;
+      setZoom(panel, Math.min(1, width / diagram.width), 'fit');
+    }
+
+    function download(content, mimeType, filename) {
+      const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+      const link = Object.assign(document.createElement('a'), { href: url, download: filename });
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    for (const panel of panels) {
+      for (const button of panel.querySelectorAll('[data-action]')) {
+        button.addEventListener('click', () => {
+          const key = panel.dataset.key;
+          const action = button.dataset.action;
+          if (action === 'source') {
+            download(panel.querySelector('.mermaid-source').textContent.trim() + '\n', 'text/plain;charset=utf-8', `neo-architecture-${key}.mmd`);
+            return;
+          }
+          const diagram = diagrams.get(key);
+          if (!diagram) return;
+          if (action === 'fit') fit(panel);
+          if (action === 'actual') setZoom(panel, 1, 'actual');
+          if (action === 'svg') {
+            const svg = diagram.svg.cloneNode(true);
+            svg.style.removeProperty('width');
+            svg.style.removeProperty('height');
+            svg.style.removeProperty('max-width');
+            svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            svg.setAttribute('width', String(Math.ceil(diagram.width)));
+            svg.setAttribute('height', String(Math.ceil(diagram.height)));
+            download(new XMLSerializer().serializeToString(svg), 'image/svg+xml;charset=utf-8', `neo-architecture-${key}.svg`);
+          }
+        });
+      }
+    }
+
+    document.getElementById('print-page').addEventListener('click', () => window.print());
+    window.addEventListener('resize', () => {
+      for (const panel of panels) if (diagrams.get(panel.dataset.key)?.mode === 'fit') fit(panel);
+    });
+
+    try {
+      const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs');
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        suppressErrorRendering: true,
+        theme: 'base',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+        themeVariables: { fontSize: '15px', lineColor: '#718096', textColor: '#243449', edgeLabelBackground: '#fff', background: '#fff' },
+        flowchart: { htmlLabels: false, useMaxWidth: false, curve: 'linear', nodeSpacing: 25, rankSpacing: 30, padding: 12 },
+        sequence: { useMaxWidth: false, actorMargin: 42, boxMargin: 8, messageMargin: 32, mirrorActors: false, noteMargin: 8 },
+        er: { useMaxWidth: false },
+      });
+      let rendered = 0;
+      for (const panel of panels) {
+        try {
+          const key = panel.dataset.key;
+          const { svg } = await mermaid.render(`neo-arch-${key}`, panel.querySelector('.mermaid-source').textContent.trim());
+          // Mermaid sanitizes the SVG in strict mode; the source is static and contains no user data.
+          panel.querySelector('.diagram-stage').innerHTML = svg;
+          const element = panel.querySelector('.diagram-stage > svg');
+          const bounds = element.viewBox.baseVal;
+          if (!(bounds.width > 0 && bounds.height > 0)) throw new Error('Invalid diagram bounds');
+          diagrams.set(key, { svg: element, width: bounds.width, height: bounds.height });
+          // Keep labels readable on small screens; Fit is available if a full-width view is preferred.
+          if (window.innerWidth <= 760) setZoom(panel, 1, 'actual');
+          else fit(panel);
+          panel.dataset.ready = 'true';
+          for (const button of panel.querySelectorAll('[data-render-control]')) button.disabled = false;
+          rendered += 1;
+        } catch (error) {
+          panel.querySelector('.diagram-stage').replaceChildren(Object.assign(document.createElement('p'), {
+            className: 'placeholder', textContent: 'Could not render this diagram. Its Mermaid source is available below.',
+          }));
+          console.error('Cannot render architecture diagram', error);
+        }
+      }
+      const complete = rendered === panels.length;
+      document.documentElement.dataset.diagramState = complete ? 'ready' : 'partial';
+      status.textContent = complete ? `${rendered} diagrams rendered: context, deployment, components, sequences and data model.` : `${rendered} of ${panels.length} diagrams rendered. Source remains available.`;
+      status.classList.toggle('has-error', !complete);
+    } catch (error) {
+      document.documentElement.dataset.diagramState = 'error';
+      status.classList.add('has-error');
+      status.textContent = 'Mermaid CDN unavailable. Allow the CDN and reload, or view/download the source below.';
+      for (const placeholder of document.querySelectorAll('.placeholder')) placeholder.textContent = 'Connect to the internet to render the diagram. Mermaid source is available below.';
+      console.error('Cannot load Mermaid CDN', error);
+    }
+  </script>
+</body>
+</html>
