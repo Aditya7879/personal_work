@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { GoldenCaseRecord, GoldenDatasetRecord } from '../api/feedbackApi';
+import { FolderPlus } from 'lucide-react';
+import { ActionButton } from './ActionButton';
 
 interface Props {
   datasets: GoldenDatasetRecord[];
@@ -74,8 +76,8 @@ export const GoldenDatasetsView: React.FC<Props> = ({
           <h1 className="mt-1 font-headline-lg text-ink-primary">Golden datasets</h1>
           <p className="mt-1 font-body-md text-ink-secondary">Only approved cases are included in evaluation runs. User feedback remains a candidate until a reviewer approves it.</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setCreateDatasetOpen(true)} className="rounded-lg border border-surface-border bg-surface px-3 py-2 text-label-md text-ink-primary hover:bg-state-gray-soft" type="button">Create dataset</button>
+        <div className="flex flex-wrap gap-2">
+          <ActionButton label="New dataset" aria-label="Create dataset" compactLabel="New" icon={<FolderPlus />} onClick={() => setCreateDatasetOpen(true)} />
           <button onClick={() => selectedDatasetId && void onCreateVersion(selectedDatasetId).catch((err) => setError(err.message))} disabled={!selectedDatasetId || saving || !selected?.case_count} className="rounded-lg border border-surface-border bg-surface px-3 py-2 text-label-md text-ink-primary disabled:opacity-50" type="button" title={!selected?.case_count ? 'Approve at least one case first' : 'Snapshot approved cases into the next version'}>Create next version</button>
           <button onClick={() => setCreateCaseOpen(true)} disabled={!selectedDatasetId} className="rounded-lg bg-dataset-purple px-3 py-2 text-label-md font-semibold text-on-primary disabled:opacity-50" type="button">Add golden candidate</button>
         </div>
@@ -86,7 +88,7 @@ export const GoldenDatasetsView: React.FC<Props> = ({
       <div className="grid gap-space-lg xl:grid-cols-[320px_1fr]">
         <section className="rounded-xl border border-surface-border bg-surface p-space-md shadow-sm">
           <h2 className="mb-3 font-title-md text-ink-primary">Datasets</h2>
-          {loading && <p className="py-6 text-center text-body-sm text-ink-muted">Loading datasets…</p>}
+          {loading && datasets.length === 0 && <div className="space-y-2" role="status" aria-label="Loading datasets">{Array.from({ length: 4 }, (_, index) => <div key={index} className="skeleton h-[76px] rounded-lg" />)}</div>}
           {!loading && datasets.length === 0 && <p className="rounded-lg border border-dashed border-surface-border p-4 text-body-sm text-ink-muted">No golden datasets yet. Create one to curate reviewed examples.</p>}
           <div className="flex flex-col gap-2">
             {datasets.map((dataset) => (
@@ -108,7 +110,8 @@ export const GoldenDatasetsView: React.FC<Props> = ({
             {selected && <span className="rounded-full bg-evidence-soft px-2 py-1 font-metadata font-semibold text-evidence-teal">Current version {selected.current_version}</span>}
           </div>
           {!selected && <p className="p-space-lg text-body-sm text-ink-muted">Create or select a dataset to get started.</p>}
-          {selected && cases.length === 0 && <p className="m-space-md rounded-lg border border-dashed border-surface-border p-space-lg text-center text-body-sm text-ink-muted">No cases in this dataset version.</p>}
+          {selected && loading && cases.length === 0 && <div className="space-y-2 p-space-md" role="status" aria-label="Loading dataset cases">{Array.from({ length: 5 }, (_, index) => <div key={index} className="skeleton h-16 rounded-lg" />)}</div>}
+          {selected && !loading && cases.length === 0 && <p className="m-space-md rounded-lg border border-dashed border-surface-border p-space-lg text-center text-body-sm text-ink-muted">No cases in this dataset version.</p>}
           {selected && cases.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-left">

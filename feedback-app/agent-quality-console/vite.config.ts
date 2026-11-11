@@ -4,6 +4,7 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  if (process.env.VITE_AUTH_MODE === 'demo_admin') throw new Error('Standalone demo auth is retired. Build the existing google_iam app and use the Demo Admin application role.');
   return {
     plugins: [react(), tailwindcss()],
     resolve: {

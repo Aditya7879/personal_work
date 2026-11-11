@@ -29,8 +29,13 @@ def _evaluate_answer(case: dict[str, Any], result: dict[str, Any]) -> tuple[str,
 
 
 def run_evaluation(evaluation_id: str) -> None:
+    from .demo_context import is_demo
+    if is_demo():
+        raise RuntimeError('Real evaluation execution is disabled in demo views')
     repository = BigQueryRepository()
     try:
+        if not settings.neo_agent_api_url:
+            raise ValueError("Configure NEO_AGENT_API_URL before invoking the real evaluation agent")
         evaluation = repository.get_evaluation(evaluation_id)
         if not evaluation:
             return
