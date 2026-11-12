@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="FastAPI surface and the services behind it — architecture diagram 4 of 7 for the NEO Agent Quality Console.">
+  <title>NEO · Architecture — FastAPI surface and the services behind it</title>
+  <style>
+    :root {
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #243449;
+      background: #f6f8fb;
+      line-height: 1.55;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .page { max-width: 1100px; padding: 28px 28px 32px; margin: auto; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 13px; color: #59687c; }
+    .brand-mark { padding: 5px 9px; border-radius: 6px; background: #283c51; color: white; font-weight: 650; font-size: 12px; letter-spacing: .06em; }
+    .brand a { color: #3f6fb5; text-decoration: none; }
+    .brand a:hover { text-decoration: underline; }
+    .heading, .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    h1 { font-size: clamp(24px, 3vw, 32px); font-weight: 650; line-height: 1.2; letter-spacing: -.03em; margin: 0 0 10px; }
+    .intro { color: #59687c; font-size: 14px; max-width: 860px; margin: 0; }
+    button { font: inherit; cursor: pointer; }
+    .button { padding: 6px 11px; min-height: 34px; border: 1px solid #d9e0e9; border-radius: 6px; background: white; color: #34465c; font-size: 12px; }
+    .button:hover:not(:disabled) { background: #edf2f8; border-color: #94a4b8; }
+    .button:disabled { cursor: not-allowed; opacity: .45; }
+    :focus-visible { outline: 3px solid #4584d1; outline-offset: 3px; }
+    .load-status { margin: 16px 0 12px; font-size: 12px; color: #627186; }
+    .load-status.has-error { color: #953d36; }
+    .diagram-panel { border: 1px solid #dce2ea; border-radius: 10px; overflow: hidden; background: white; }
+    .panel-heading { padding: 14px 20px 12px; }
+    .eyebrow { color: #65748a; font-size: 11px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; margin: 0; }
+    .toolbar { padding: 9px 15px; border-top: 1px solid #e1e6ee; border-bottom: 1px solid #e1e6ee; background: #fbfcfe; justify-content: flex-start; gap: 6px; }
+    .zoom-value { margin-left: auto; color: #68788c; font-size: 11px; }
+    .diagram-viewport { overflow: auto; scrollbar-gutter: stable; }
+    .diagram-stage { width: max-content; min-width: 100%; padding: 20px; display: flex; justify-content: center; align-items: flex-start; }
+    .diagram-stage > svg { display: block; max-width: none !important; flex-shrink: 0; }
+    .placeholder { width: min(430px, 75vw); padding: 80px 10px; text-align: center; color: #64748b; font-size: 13px; }
+    .note { border-top: 1px solid #e1e6ee; padding: 13px 20px; font-size: 12px; color: #58677b; margin: 0; }
+    details { border-top: 1px solid #e1e6ee; }
+    summary { padding: 11px 20px; cursor: pointer; color: #5d6d82; font-size: 12px; }
+    .mermaid-source { font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; max-height: 340px; overflow: auto; padding: 0 20px 18px; margin: 0; color: #40546f; }
+    .pager { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; font-size: 12px; flex-wrap: wrap; }
+    .pager a { color: #3f6fb5; text-decoration: none; }
+    .pager a:hover { text-decoration: underline; }
+    footer { margin-top: 16px; font-size: 11px; color: #6a788c; }
+    footer p { margin: 4px 0; }
+    footer a { color: #3f6fb5; }
+    .noscript { font-size: 13px; color: #963e38; }
+    @media (max-width: 760px) {
+      .page { padding: 20px 14px; }
+      .zoom-value { display: none; }
+    }
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      :root { background: white; line-height: 1.35; }
+      .page { max-width: none; padding: 0; }
+      .brand, .toolbar, .load-status, details, #print-page, .pager, footer { display: none; }
+      h1 { font-size: 18px; margin-bottom: 4px; }
+      .intro { display: none; }
+      .diagram-panel { border: none; }
+      .panel-heading { padding: 2px 0 6px; }
+      .note { font-size: 9px; padding: 6px 0; border-top: none; }
+      .diagram-viewport { overflow: visible; scrollbar-gutter: auto; }
+      .diagram-stage { width: 100%; padding: 0; }
+      .diagram-stage > svg { width: 100% !important; height: 150mm !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="brand"><span class="brand-mark">NEO</span><a href="index.html">Architecture diagrams</a> · Low level · 4 of 7</div>
+      <div class="heading">
+        <div>
+          <h1>FastAPI surface and the services behind it</h1>
+          <p class="intro">Role-scoped routes in main.py, three routers, and a service layer. The workflow worker is the engine: it claims leased jobs from BigQuery and runs enrich → RCA or generation → RCA recheck.</p>
+        </div>
+        <button class="button" type="button" id="print-page">Print / PDF</button>
+      </div>
+    </header>
+
+    <noscript>
+      <style>.toolbar, #print-page, .load-status, .diagram-viewport { display: none; }</style>
+      <p class="noscript">Enable JavaScript and allow the Mermaid CDN to render the diagram. The Mermaid source is available below.</p>
+    </noscript>
+    <p class="load-status" id="load-status" role="status" aria-live="polite">Loading Mermaid from CDN…</p>
+
+    <section class="diagram-panel" id="panel-backend" aria-labelledby="page-title" data-key="backend">
+      <div class="panel-heading">
+        <p class="eyebrow">4 / Low level · Backend modules</p>
+      </div>
+      <div class="toolbar" role="group" aria-label="Diagram controls">
+        <button class="button" type="button" data-action="fit" data-render-control disabled>Fit</button>
+        <button class="button" type="button" data-action="actual" data-render-control disabled>100%</button>
+        <button class="button" type="button" data-action="svg" data-render-control disabled>Download SVG</button>
+        <button class="button" type="button" data-action="source">Mermaid source</button>
+        <output class="zoom-value" aria-label="Diagram zoom">—</output>
+      </div>
+      <div class="diagram-viewport" tabindex="0" role="region" aria-label="FastAPI surface and the services behind it diagram; scroll sideways if needed">
+        <div class="diagram-stage"><p class="placeholder">Rendering the diagram…</p></div>
+      </div>
+      <p class="note"><strong>Worker.</strong> Enabled by default, polling about every 15 s. Jobs are claimed under a lease (renewed while running) with idempotency keys on enqueue, so only one worker instance processes a job and retries stay safe. Agent calls are restricted to an allow-listed host.</p>
+      <details>
+        <summary>View Mermaid source</summary>
+        <pre class="mermaid-source" tabindex="0">flowchart TB
+    accTitle: Low level backend modules of the Agent Quality Console
+    accDescr: The HTTP surface has auth routes, reporter routes under /api/my, reviewer routes for feedback and overview, workflow actions for analysis retests and answer RCA, golden dataset and evaluation routes, plus environment, access and role demo routers. Behind them sit the workflow repository and worker, the root cause gateway client, Neo4j evidence retrieval, agent targets with endpoint tests, ownership and submission helpers, the auth module, access and environment repositories, and dashboard, evaluation and demo helpers. External systems are BigQuery, Neo4j, the AI gateway and the NEO agent API.
+
+    subgraph HTTP["HTTP surface · main.py + routers"]
+        AUTH["auth&lt;br/&gt;mock-login · me · mock-users"]:::guard
+        MYR["/api/my/*&lt;br/&gt;reporter: feedback CRUD · taxonomy&lt;br/&gt;history · notifications · confirmation"]:::reporter
+        RVR["/api/feedback + /api/overview&lt;br/&gt;reviewer: inbox · triage&lt;br/&gt;root-cause/suggest · KPIs"]:::reviewer
+        WFR["workflow actions&lt;br/&gt;analysis 202 · retests 202&lt;br/&gt;answer-rca 202"]:::reviewer
+        GER["golden datasets / cases&lt;br/&gt;evaluations"]:::reviewer
+        ENVR["environment_routes&lt;br/&gt;environments · endpoint tests&lt;br/&gt;promotions"]:::admin
+        ACR["access_routes&lt;br/&gt;grants + audit history"]:::admin
+        RDR["role_demo_routes&lt;br/&gt;persona · session · reset"]:::app
+    end
+
+    subgraph SVC["Services · backend/app/"]
+        WREPO["workflow_repository&lt;br/&gt;jobs · leases · idempotency&lt;br/&gt;append-only versions"]:::app
+        WWORK["workflow_worker&lt;br/&gt;claim → enrich/rca&lt;br/&gt;or generate → recheck"]:::app
+        RCA2["root_cause&lt;br/&gt;gateway client + error taxonomy&lt;br/&gt;no automatic retry"]:::ai
+        EVID["neo4j_evidence + document_evidence&lt;br/&gt;semantic + keyword retrieval"]:::evidence
+        TGT["agent_targets + endpoint_tests&lt;br/&gt;env targets · host allow-list"]:::app
+        OWN["feedback_ownership · submission_edits&lt;br/&gt;answer_review · business_domain"]:::app
+        AUTHM["auth.py&lt;br/&gt;mock / IAP / IAM modes&lt;br/&gt;roles from access grants"]:::guard
+        ACCR["access_repository&lt;br/&gt;grant lookups + cache"]:::app
+        ENVRP["environment_repository&lt;br/&gt;env revisions · promotions"]:::app
+        MISC["dashboard · evaluation · cache&lt;br/&gt;role_demo · demo_simulation&lt;br/&gt;neo_companion · config"]:::ext
+    end
+
+    BQQ[("BigQuery&lt;br/&gt;agent_quality")]:::store
+    N4[("Neo4j&lt;br/&gt;source passages")]:::store
+    GWW["L'Oréal AI Gateway&lt;br/&gt;Sonnet 4.6"]:::ai
+    NEOA["NEO agent API&lt;br/&gt;per-environment targets"]:::ext
+
+    WFR --&gt; WREPO
+    RVR --&gt; OWN
+    ENVR --&gt; ENVRP
+    ACR --&gt; ACCR
+    AUTH --- AUTHM
+    WREPO --&gt; WWORK
+    WWORK --&gt; EVID
+    WWORK --&gt; RCA2
+    WWORK --&gt; TGT
+
+    WREPO --- BQQ
+    ACCR --- BQQ
+    ENVRP --- BQQ
+    EVID --- N4
+    RCA2 --&gt; GWW
+    TGT --&gt; NEOA
+
+    classDef reporter fill:#e9f6f2,stroke:#368577,color:#154f49
+    classDef reviewer fill:#edf3fd,stroke:#557ab9,color:#284b82
+    classDef admin fill:#f7ecec,stroke:#b0655f,color:#7a3b36
+    classDef app fill:#f0f3f7,stroke:#7e8fa4,color:#34465d
+    classDef ai fill:#f2edfa,stroke:#9273b6,color:#573b80
+    classDef evidence fill:#fff6e3,stroke:#bc9144,color:#72551c
+    classDef store fill:#eef7f9,stroke:#4b8f9e,color:#1f5561
+    classDef ext fill:#fff6e3,stroke:#bc9144,color:#72551c
+    classDef guard fill:#fff0ee,stroke:#c07a55,color:#83441f</pre>
+      </details>
+    </section>
+
+    <nav class="pager" aria-label="Diagram pages"><a href="architecture-frontend-components.html">&lsaquo; React SPA organized by role lanes</a><a href="index.html">All diagrams</a><a href="architecture-seq-submission-rca.html">Submission → automatic RCA &rsaquo;</a></nav>
+    <footer>
+      <p>Diagram 4 of 7 in the Agent Quality Console architecture set. Workflow narrative: <a href="feedback-workflow.html">feedback-workflow.html</a>.</p>
+      <p>Standalone HTML · Mermaid 11.4.1 via jsDelivr CDN · internet needed to render · no feedback data or credentials included.</p>
+    </footer>
+  </main>
+
+  <script type="module">
+    const panels = [...document.querySelectorAll('.diagram-panel')];
+    const status = document.getElementById('load-status');
+    const diagrams = new Map();
+
+    function setZoom(panel, scale, mode) {
+      const diagram = diagrams.get(panel.dataset.key);
+      if (!diagram) return;
+      diagram.scale = Math.max(0.2, Math.min(2, scale));
+      diagram.mode = mode;
+      diagram.svg.style.width = `${diagram.width * diagram.scale}px`;
+      diagram.svg.style.height = `${diagram.height * diagram.scale}px`;
+      panel.querySelector('.zoom-value').textContent = `${Math.round(diagram.scale * 100)}%`;
+    }
+
+    function fit(panel) {
+      const diagram = diagrams.get(panel.dataset.key);
+      if (!diagram) return;
+      const width = panel.querySelector('.diagram-viewport').clientWidth - 40;
+      setZoom(panel, Math.min(1, width / diagram.width), 'fit');
+    }
+
+    function download(content, mimeType, filename) {
+      const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+      const link = Object.assign(document.createElement('a'), { href: url, download: filename });
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    for (const panel of panels) {
+      for (const button of panel.querySelectorAll('[data-action]')) {
+        button.addEventListener('click', () => {
+          const key = panel.dataset.key;
+          const action = button.dataset.action;
+          if (action === 'source') {
+            download(panel.querySelector('.mermaid-source').textContent.trim() + '\n', 'text/plain;charset=utf-8', `neo-architecture-${key}.mmd`);
+            return;
+          }
+          const diagram = diagrams.get(key);
+          if (!diagram) return;
+          if (action === 'fit') fit(panel);
+          if (action === 'actual') setZoom(panel, 1, 'actual');
+          if (action === 'svg') {
+            const svg = diagram.svg.cloneNode(true);
+            svg.style.removeProperty('width');
+            svg.style.removeProperty('height');
+            svg.style.removeProperty('max-width');
+            svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            svg.setAttribute('width', String(Math.ceil(diagram.width)));
+            svg.setAttribute('height', String(Math.ceil(diagram.height)));
+            download(new XMLSerializer().serializeToString(svg), 'image/svg+xml;charset=utf-8', `neo-architecture-${key}.svg`);
+          }
+        });
+      }
+    }
+
+    document.getElementById('print-page').addEventListener('click', () => window.print());
+    window.addEventListener('resize', () => {
+      for (const panel of panels) if (diagrams.get(panel.dataset.key)?.mode === 'fit') fit(panel);
+    });
+
+    try {
+      const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs');
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        suppressErrorRendering: true,
+        theme: 'base',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+        themeVariables: { fontSize: '15px', lineColor: '#718096', textColor: '#243449', edgeLabelBackground: '#fff', background: '#fff' },
+        flowchart: { htmlLabels: false, useMaxWidth: false, curve: 'linear', nodeSpacing: 25, rankSpacing: 30, padding: 12 },
+        sequence: { useMaxWidth: false, actorMargin: 42, boxMargin: 8, messageMargin: 32, mirrorActors: false, noteMargin: 8 },
+        er: { useMaxWidth: false },
+      });
+      let rendered = 0;
+      for (const panel of panels) {
+        try {
+          const key = panel.dataset.key;
+          const { svg } = await mermaid.render(`neo-arch-${key}`, panel.querySelector('.mermaid-source').textContent.trim());
+          // Mermaid sanitizes the SVG in strict mode; the source is static and contains no user data.
+          panel.querySelector('.diagram-stage').innerHTML = svg;
+          const element = panel.querySelector('.diagram-stage > svg');
+          const bounds = element.viewBox.baseVal;
+          if (!(bounds.width > 0 && bounds.height > 0)) throw new Error('Invalid diagram bounds');
+          diagrams.set(key, { svg: element, width: bounds.width, height: bounds.height });
+          // Keep labels readable on small screens; Fit is available if a full-width view is preferred.
+          if (window.innerWidth <= 760) setZoom(panel, 1, 'actual');
+          else fit(panel);
+          panel.dataset.ready = 'true';
+          for (const button of panel.querySelectorAll('[data-render-control]')) button.disabled = false;
+          rendered += 1;
+        } catch (error) {
+          panel.querySelector('.diagram-stage').replaceChildren(Object.assign(document.createElement('p'), {
+            className: 'placeholder', textContent: 'Could not render this diagram. Its Mermaid source is available below.',
+          }));
+          console.error('Cannot render architecture diagram', error);
+        }
+      }
+      const complete = rendered === panels.length;
+      document.documentElement.dataset.diagramState = complete ? 'ready' : 'partial';
+      status.textContent = complete ? 'Diagram rendered. Use Fit / 100%, or download the SVG or Mermaid source.' : 'Diagram could not be rendered. Source remains available below.';
+      status.classList.toggle('has-error', !complete);
+    } catch (error) {
+      document.documentElement.dataset.diagramState = 'error';
+      status.classList.add('has-error');
+      status.textContent = 'Mermaid CDN unavailable. Allow the CDN and reload, or view/download the source below.';
+      for (const placeholder of document.querySelectorAll('.placeholder')) placeholder.textContent = 'Connect to the internet to render the diagram. Mermaid source is available below.';
+      console.error('Cannot load Mermaid CDN', error);
+    }
+  </script>
+</body>
+</html>
